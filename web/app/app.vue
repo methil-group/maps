@@ -460,7 +460,7 @@
               <!-- Export json -->
               <button
                 @click="exportRouteData"
-                class="flex items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                class="flex items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -473,7 +473,7 @@
               <!-- Open Detailed Analysis Modal -->
               <button
                 @click="isAnalysisOpen = true"
-                class="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-brand-violet-50 hover:bg-brand-violet-100 dark:bg-brand-violet-950/40 dark:hover:bg-brand-violet-950/60 text-brand-violet-600 dark:text-brand-violet-400 text-xs font-extrabold transition-colors border border-brand-violet-200/20"
+                class="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-brand-violet-50 hover:bg-brand-violet-100 dark:bg-brand-violet-950/40 dark:hover:bg-brand-violet-950/60 text-brand-violet-600 dark:text-brand-violet-400 text-xs font-extrabold transition-colors border border-brand-violet-200/20 whitespace-nowrap"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="20" x2="18" y2="10"></line>

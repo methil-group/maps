@@ -55,7 +55,7 @@
     "debug_desc": "Affiche le détail des segments et des poids"
   },
   "analysis": {
-    "title": "Analyse de l'Itinéraire",
+    "title": "Analyse",
     "modal_title": "Analyse de l'Optimisation du Trajet",
     "modal_desc": "Analyse détaillée de l'itinéraire optimal entre tous les lieux sélectionnés",
     "summary": "Résumé du Trajet",
@@ -76,7 +76,8 @@
     "reason_2_title": "Efficacité de calcul",
     "reason_2_desc": "Parmi toutes les combinaisons possibles, il s'agit du chemin le plus court trouvé.",
     "reason_3_title": "Navigation réelle",
-    "reason_3_desc": "Chaque segment est optimisé en utilisant les distances routières réelles."
+    "reason_3_desc": "Chaque segment est optimisé en utilisant les distances routières réelles.",
+    "from_to": "De \\ À"
   },
   "debug": {
     "title": "Données de Debug du Moteur de Routage",

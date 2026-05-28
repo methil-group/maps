@@ -55,7 +55,7 @@
     "debug_desc": "Shows segment details and weights"
   },
   "analysis": {
-    "title": "Route Analysis",
+    "title": "Analysis",
     "modal_title": "Route Optimization Analysis",
     "modal_desc": "Detailed analysis of the optimal route between all selected locations",
     "summary": "Route Summary",
@@ -76,7 +76,8 @@
     "reason_2_title": "Computational efficiency",
     "reason_2_desc": "Out of all possible combinations, this is the shortest path found.",
     "reason_3_title": "Real-world navigation",
-    "reason_3_desc": "Each segment is optimized using real-world road distances."
+    "reason_3_desc": "Each segment is optimized using real-world road distances.",
+    "from_to": "From \\ To"
   },
   "debug": {
     "title": "Routing Engine Debug Data",

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+  <div v-if="isOpen" @click.self="closeModal" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
     <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-pop-in">
       
       <!-- Modal Header -->
@@ -55,7 +55,12 @@
             <div class="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl">
               <div class="text-xs text-slate-400 dark:text-slate-500 font-medium">{{ t('analysis.avg_distance') }}</div>
               <div class="text-lg font-bold text-slate-900 dark:text-white mt-1 font-mono">
-                {{ (totalDistance / (locations.length > 1 ? locations.length : 1) / 1000).toFixed(2) }} km
+                <template v-if="locations.length >= 3">
+                  {{ (totalDistance / (locations.length - 1) / 1000).toFixed(2) }} km
+                </template>
+                <template v-else>
+                  —
+                </template>
               </div>
             </div>
 
@@ -104,89 +109,6 @@
                   <span>{{ t('analysis.running_total') }}: <span class="font-bold text-slate-700 dark:text-slate-300 font-mono">{{ (segment.cumulativeDistance / 1000).toFixed(2) }} km</span></span>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Adjacency Matrix -->
-        <div class="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl">
-          <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
-            {{ t('analysis.matrix') }}
-          </h4>
-          <p class="text-xs text-slate-400 dark:text-slate-500 mb-4 leading-relaxed">
-            {{ t('analysis.matrix_desc') }}
-          </p>
-          <div class="overflow-x-auto border border-slate-100 dark:border-slate-800 rounded-lg">
-            <table class="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr class="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">
-                  <th class="p-3 font-semibold w-28 shrink-0 bg-slate-100/50 dark:bg-slate-900/50 border-r border-slate-100 dark:border-slate-800">
-                    {{ t('analysis.from_to') }}
-                  </th>
-                  <th v-for="loc in locations" :key="loc.id" class="p-3 font-semibold text-center whitespace-nowrap">
-                    {{ getShortName(loc.name) }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="fromLoc in locations" :key="fromLoc.id" class="border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-white/50 dark:hover:bg-slate-900/20">
-                  <td class="p-3 font-bold bg-slate-100/20 dark:bg-slate-900/10 border-r border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white max-w-28 truncate">
-                    {{ getShortName(fromLoc.name) }}
-                  </td>
-                  <td
-                    v-for="toLoc in locations"
-                    :key="toLoc.id"
-                    class="p-3 text-center font-mono text-slate-600 dark:text-slate-400"
-                    :class="fromLoc.id === toLoc.id ? 'bg-slate-100/40 dark:bg-slate-900/40 text-slate-300 dark:text-slate-600' : ''"
-                  >
-                    <span v-if="fromLoc.id === toLoc.id">—</span>
-                    <span v-else>{{ ((distanceMatrix?.get(fromLoc.id)?.get(toLoc.id) || 0) / 1000).toFixed(2) }} km</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Logic description -->
-        <div class="p-5 bg-brand-violet-50/50 dark:bg-brand-violet-950/20 border border-brand-violet-100 dark:border-brand-violet-950/40 rounded-xl">
-          <h4 class="text-sm font-semibold text-brand-violet-800 dark:text-brand-violet-400 mb-3 flex items-center gap-1.5">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-            {{ t('analysis.why_optimal') }}
-          </h4>
-          <div class="text-xs space-y-3 leading-relaxed text-slate-600 dark:text-slate-400">
-            <div class="flex items-start gap-2">
-              <div class="w-4 h-4 rounded-full bg-brand-violet-100 dark:bg-brand-violet-950 text-brand-violet-700 dark:text-brand-violet-400 flex items-center justify-center font-bold text-[9px] mt-0.5 shrink-0">
-                1
-              </div>
-              <p>
-                <span class="font-bold text-slate-800 dark:text-slate-300">{{ t('analysis.reason_1_title') }}:</span>
-                {{ t('analysis.reason_1_desc') }}
-              </p>
-            </div>
-            
-            <div class="flex items-start gap-2">
-              <div class="w-4 h-4 rounded-full bg-brand-violet-100 dark:bg-brand-violet-950 text-brand-violet-700 dark:text-brand-violet-400 flex items-center justify-center font-bold text-[9px] mt-0.5 shrink-0">
-                2
-              </div>
-              <p>
-                <span class="font-bold text-slate-800 dark:text-slate-300">{{ t('analysis.reason_2_title') }}:</span>
-                {{ t('analysis.reason_2_desc', { count: locations.length > 0 ? getFactorialVal().toLocaleString() : 0 }) }}
-              </p>
-            </div>
-
-            <div class="flex items-start gap-2">
-              <div class="w-4 h-4 rounded-full bg-brand-violet-100 dark:bg-brand-violet-950 text-brand-violet-700 dark:text-brand-violet-400 flex items-center justify-center font-bold text-[9px] mt-0.5 shrink-0">
-                3
-              </div>
-              <p>
-                <span class="font-bold text-slate-800 dark:text-slate-300">{{ t('analysis.reason_3_title') }}:</span>
-                {{ t('analysis.reason_3_desc') }}
-              </p>
             </div>
           </div>
         </div>
@@ -244,14 +166,4 @@ const routeSegments = computed(() => {
   return segments
 })
 
-const getFactorialVal = () => {
-  const n = props.locations.length
-  if (n <= 1) return 1
-  return factorial(n - 1)
-}
-
-function factorial(num: number): number {
-  if (num <= 1) return 1
-  return num * factorial(num - 1)
-}
 </script>
