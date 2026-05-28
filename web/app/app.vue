@@ -195,6 +195,42 @@
             </div>
           </div>
 
+          <!-- Optimization Criteria Widget -->
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              {{ t('settings.optimization_criterion') }}
+            </label>
+            <div class="grid grid-cols-5 gap-1">
+              <button
+                v-for="crit in ['distance', 'time', 'economy', 'smart', 'toll']"
+                :key="crit"
+                @click="optimizationCriterion = crit"
+                class="py-2 px-0.5 text-center text-[10px] font-bold rounded-lg border transition-all truncate"
+                :class="optimizationCriterion === crit
+                  ? 'bg-brand-violet-600 border-brand-violet-600 text-white shadow-sm shadow-brand-violet-500/20'
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'"
+              >
+                {{ t(`settings.criterion_${crit}`) }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Time Value Slider (Only shown at top level if Smart is selected) -->
+          <div v-if="optimizationCriterion === 'smart'" class="p-4 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 space-y-1.5 shadow-sm">
+            <div class="flex items-center justify-between text-xs font-bold">
+              <span class="text-slate-600 dark:text-slate-400">{{ t('settings.time_value') }}</span>
+              <span class="text-brand-violet-600 font-mono">{{ timeValue.toFixed(0) }} €/h</span>
+            </div>
+            <input
+              type="range"
+              min="5"
+              max="50"
+              step="1"
+              v-model.number="timeValue"
+              class="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-violet-600"
+            />
+          </div>
+
           <!-- Settings (Collapsible Card Widget) -->
           <div class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-slate-50/50 dark:bg-slate-950/20">
             <button
@@ -215,28 +251,8 @@
 
             <!-- Collapsible Settings Body -->
             <div v-show="isSettingsOpen" class="p-4 space-y-4">
-              <!-- Optimization Criteria Pills -->
-              <div class="space-y-1.5">
-                <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                  {{ t('settings.optimization_criterion') }}
-                </label>
-                <div class="grid grid-cols-3 gap-1.5">
-                  <button
-                    v-for="crit in ['distance', 'time', 'economy', 'smart', 'toll']"
-                    :key="crit"
-                    @click="optimizationCriterion = crit"
-                    class="py-2 px-1 text-center text-xs font-bold rounded-lg border transition-all truncate"
-                    :class="optimizationCriterion === crit
-                      ? 'bg-brand-violet-600 border-brand-violet-600 text-white shadow-sm shadow-brand-violet-500/20'
-                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'"
-                  >
-                    {{ t(`settings.criterion_${crit}`) }}
-                  </button>
-                </div>
-              </div>
-
               <!-- Fuel Type -->
-              <div v-if="optimizationCriterion === 'smart' || optimizationCriterion === 'economy'" class="space-y-1.5">
+              <div class="space-y-1.5">
                 <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                   {{ t('settings.fuel_type') }}
                 </label>
@@ -251,7 +267,7 @@
               </div>
 
               <!-- Fuel Consumption Slider -->
-              <div v-if="optimizationCriterion === 'smart' || optimizationCriterion === 'economy'" class="space-y-1.5">
+              <div class="space-y-1.5">
                 <div class="flex items-center justify-between text-xs font-bold">
                   <span class="text-slate-600 dark:text-slate-400">{{ t('settings.fuel_consumption') }}</span>
                   <span class="text-brand-violet-600 font-mono">{{ fuelConsumption.toFixed(1) }} L</span>
@@ -267,7 +283,7 @@
               </div>
 
               <!-- Fuel Price Input -->
-              <div v-if="optimizationCriterion === 'smart' || optimizationCriterion === 'economy'" class="space-y-1.5">
+              <div class="space-y-1.5">
                 <label class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                   {{ t('settings.fuel_price') }}
                 </label>
@@ -283,7 +299,7 @@
               </div>
 
               <!-- Toll Price Slider -->
-              <div v-if="optimizationCriterion === 'smart' || optimizationCriterion === 'economy' || optimizationCriterion === 'toll'" class="space-y-1.5">
+              <div class="space-y-1.5">
                 <div class="flex items-center justify-between text-xs font-bold">
                   <span class="text-slate-600 dark:text-slate-400">{{ t('settings.toll_price') }}</span>
                   <span class="text-brand-violet-600 font-mono">{{ tollPrice.toFixed(3) }} €/km</span>
@@ -294,22 +310,6 @@
                   max="0.25"
                   step="0.01"
                   v-model.number="tollPrice"
-                  class="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-violet-600"
-                />
-              </div>
-
-              <!-- Time Value Slider -->
-              <div v-if="optimizationCriterion === 'smart'" class="space-y-1.5">
-                <div class="flex items-center justify-between text-xs font-bold">
-                  <span class="text-slate-600 dark:text-slate-400">{{ t('settings.time_value') }}</span>
-                  <span class="text-brand-violet-600 font-mono">{{ timeValue.toFixed(0) }} €/h</span>
-                </div>
-                <input
-                  type="range"
-                  min="5"
-                  max="50"
-                  step="1"
-                  v-model.number="timeValue"
                   class="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-violet-600"
                 />
               </div>
