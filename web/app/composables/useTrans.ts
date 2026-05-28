@@ -5,6 +5,14 @@ import fr from '../locales/fr.json'
 const currentLocale = ref<'en' | 'fr'>('fr') // Default to French
 const translations = { en, fr }
 
+// Load initial locale from localStorage if on client side
+if (typeof window !== 'undefined') {
+  const saved = localStorage.getItem('methil_maps_locale')
+  if (saved === 'en' || saved === 'fr') {
+    currentLocale.value = saved
+  }
+}
+
 export function useTrans() {
   const t = (key: string, params?: Record<string, any>) => {
     const keys = key.split('.')
@@ -31,16 +39,22 @@ export function useTrans() {
     return val
   }
   
+  const setLocale = (l: 'en' | 'fr') => {
+    currentLocale.value = l
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('methil_maps_locale', l)
+    }
+  }
+
   const toggleLocale = () => {
-    currentLocale.value = currentLocale.value === 'en' ? 'fr' : 'en'
+    const next = currentLocale.value === 'en' ? 'fr' : 'en'
+    setLocale(next)
   }
   
   return {
     t,
     locale: currentLocale,
     toggleLocale,
-    setLocale: (l: 'en' | 'fr') => {
-      currentLocale.value = l
-    }
+    setLocale
   }
 }

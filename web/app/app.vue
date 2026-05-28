@@ -519,6 +519,7 @@ const toggleTheme = () => {
   } else {
     document.documentElement.classList.remove('dark')
   }
+  localStorage.setItem('methil_maps_theme', theme.value)
 }
 
 // Side drawers & modals open state
@@ -895,19 +896,39 @@ watch(
 
 // Initialize
 onMounted(() => {
-  // Check OS theme preference
-  const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-  if (isDark) {
-    theme.value = 'dark'
-    document.documentElement.classList.add('dark')
+  // Check saved theme or OS preference
+  const savedTheme = localStorage.getItem('methil_maps_theme')
+  if (savedTheme === 'dark' || savedTheme === 'light') {
+    theme.value = savedTheme
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  } else {
+    const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+    if (isDark) {
+      theme.value = 'dark'
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('methil_maps_theme', 'dark')
+    } else {
+      theme.value = 'light'
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('methil_maps_theme', 'light')
+    }
   }
   
-  // Set default language based on browser preference
-  const lang = navigator.language || (navigator as any).userLanguage
-  if (lang && lang.startsWith('en')) {
-    setLocale('en')
+  // Check saved locale or browser preference
+  const savedLocale = localStorage.getItem('methil_maps_locale')
+  if (savedLocale === 'en' || savedLocale === 'fr') {
+    setLocale(savedLocale)
   } else {
-    setLocale('fr')
+    const lang = navigator.language || (navigator as any).userLanguage
+    if (lang && lang.startsWith('en')) {
+      setLocale('en')
+    } else {
+      setLocale('fr')
+    }
   }
 
   loadStateFromUrl()
