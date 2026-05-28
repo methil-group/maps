@@ -129,10 +129,19 @@ export class RouteOptimizer {
               return { ...osrmRes, fuelCost, tollCost, segments: [] };
             }
           } catch (_) {
-            // Ignore error parsing, fallback to standard error
+            // Ignore parsing error
           }
         }
-        throw new Error("Failed to fetch route from local server");
+        
+        let errMsg = "Erreur de communication avec le serveur de calcul.";
+        try {
+          const errData = await response.json();
+          if (errData.error) errMsg = errData.error;
+        } catch (_) {}
+        
+        const serverErr = new Error(errMsg);
+        (serverErr as any).isServerError = true;
+        throw serverErr;
       }
       
       const data = await response.json();
@@ -148,7 +157,18 @@ export class RouteOptimizer {
         };
       }
       throw new Error("No route found in response");
-    } catch (error) {
+    } catch (error: any) {
+      if (error.isServerError) {
+        throw error;
+      }
+      
+      // If it is a network connection error (e.g. failed to fetch), throw it as a server error too
+      if (error instanceof TypeError || error.message?.includes("fetch")) {
+        const netErr = new Error("Impossible de contacter le serveur de routage (serveur éteint ou injoignable).");
+        (netErr as any).isServerError = true;
+        throw netErr;
+      }
+      
       console.error("Error calculating route with local server:", error);
       try {
         console.log("Attempting OSRM fallback...");

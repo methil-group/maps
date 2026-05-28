@@ -218,9 +218,9 @@ onMounted(async () => {
     zoomControl: false // custom position zoom control
   }).setView(defaultCenter, defaultZoom)
   
-  // Add zoom control at top-right
+  // Add zoom control at top-left
   L.control.zoom({
-    position: 'topright'
+    position: 'topleft'
   }).addTo(map)
   
   // Tile layer

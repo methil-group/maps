@@ -496,6 +496,78 @@
       :distanceMatrix="routeOptimizer.distanceMatrix"
       @close="isAnalysisOpen = false"
     />
+
+    <!-- Toast Notifications -->
+    <transition
+      enter-active-class="transform ease-out duration-300 transition"
+      enter-from-class="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+      enter-to-class="translate-y-0 opacity-100 sm:translate-x-0"
+      leave-active-class="transition ease-in duration-100"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="notification && notification.visible"
+        class="fixed top-6 right-6 z-[2000] w-full max-w-sm overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border rounded-2xl shadow-xl transition-all"
+        :class="notification.type === 'error' ? 'border-red-200 dark:border-red-900/50' : 'border-emerald-200 dark:border-emerald-900/50'"
+      >
+        <div class="p-4 flex items-start gap-3">
+          <!-- Icon -->
+          <div class="shrink-0 mt-0.5">
+            <svg
+              v-if="notification.type === 'error'"
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 text-rose-500"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-5 h-5 text-emerald-500"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 min-w-0">
+            <h5 class="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+              {{ notification.title }}
+            </h5>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-snug">
+              {{ notification.message }}
+            </p>
+          </div>
+
+          <!-- Close Button -->
+          <button
+            @click="notification.visible = false"
+            class="shrink-0 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-500 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -525,6 +597,26 @@ const toggleTheme = () => {
 // Side drawers & modals open state
 const isSettingsOpen = ref(false)
 const isAnalysisOpen = ref(false)
+
+// Notification system
+const notification = ref<{
+  type: 'success' | 'error' | 'warning' | 'info'
+  title: string
+  message: string
+  visible: boolean
+} | null>(null)
+
+let notificationTimeout: any = null
+
+const showNotification = (type: 'success' | 'error' | 'warning' | 'info', title: string, message: string) => {
+  if (notificationTimeout) clearTimeout(notificationTimeout)
+  notification.value = { type, title, message, visible: true }
+  notificationTimeout = setTimeout(() => {
+    if (notification.value) {
+      notification.value.visible = false
+    }
+  }, 5000)
+}
 
 // Routing states
 const locations = ref<Location[]>([])
@@ -789,8 +881,13 @@ const calculateRoute = async () => {
     
     // Freeze calculated criterion badge
     calculatedCriterion.value = optimizationCriterion.value
-  } catch (e) {
+  } catch (e: any) {
     console.error('Calculation error:', e)
+    showNotification(
+      'error',
+      t('notifications.calculation_error'),
+      e?.message || t('notifications.calculation_error_desc')
+    )
   } finally {
     isCalculating.value = false
   }
@@ -875,7 +972,11 @@ const shareRoute = () => {
   const currentUrl = new URL(window.location.href)
   navigator.clipboard.writeText(currentUrl.toString())
   
-  alert(t('notifications.link_copied_desc'))
+  showNotification(
+    'success',
+    t('notifications.link_copied'),
+    t('notifications.link_copied_desc')
+  )
 }
 
 // Observers
