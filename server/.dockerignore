@@ -1,0 +1,6 @@
+server_bin
+data/*.osm.pbf
+data/*.pbf
+.DS_Store
+.gitignore
+Dockerfile

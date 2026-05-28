@@ -1,0 +1,4 @@
+# Ajoutez ici les URLs des fichiers .osm.pbf que vous souhaitez utiliser.
+# Source recommandée : https://download.geofabrik.de/
+
+https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf

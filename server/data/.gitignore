@@ -1,0 +1,3 @@
+# Data files (large OSM files)
+*.osm.pbf
+*.osm.pbf.*
