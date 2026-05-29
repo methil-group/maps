@@ -1090,9 +1090,34 @@ const exportRouteGPX = () => {
 
 // Google Maps redirection
 const redirectToGoogleMaps = () => {
-  if (locations.value.length < 2) return
+  if (optimalRoute.value.length === 0) return
   
-  const pathStops = locations.value.map(loc => `${loc.lat},${loc.lng}`).join('/')
+  // Subsample coordinates from the exact route geometry (up to 75 points)
+  const maxPoints = 75
+  const selectedCoords: [number, number][] = []
+  
+  if (optimalRoute.value.length <= maxPoints) {
+    optimalRoute.value.forEach(([lat, lng]) => {
+      selectedCoords.push([lat, lng])
+    })
+  } else {
+    const step = (optimalRoute.value.length - 1) / (maxPoints - 1)
+    for (let i = 0; i < maxPoints; i++) {
+      const idx = Math.round(i * step)
+      selectedCoords.push(optimalRoute.value[idx])
+    }
+  }
+  
+  // Format each coordinate to 5 decimal places and filter out consecutive duplicates
+  const formattedPoints: string[] = []
+  selectedCoords.forEach(([lat, lng]) => {
+    const str = `${lat.toFixed(5)},${lng.toFixed(5)}`
+    if (formattedPoints.length === 0 || formattedPoints[formattedPoints.length - 1] !== str) {
+      formattedPoints.push(str)
+    }
+  })
+  
+  const pathStops = formattedPoints.join('/')
   const url = `https://www.google.com/maps/dir/${pathStops}/data=!4m2!4m1!3e0`
   
   window.open(url, '_blank')
