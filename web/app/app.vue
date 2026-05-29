@@ -1053,6 +1053,18 @@ watch(fuelType, async (newType) => {
   }
 })
 
+watch(
+  [optimizationCriterion, fuelType, fuelConsumption, tollPrice, timeValue],
+  () => {
+    if (isInitializing) return
+    localStorage.setItem('methil_maps_criterion', optimizationCriterion.value)
+    localStorage.setItem('methil_maps_fuel_type', fuelType.value)
+    localStorage.setItem('methil_maps_fuel_consumption', fuelConsumption.value.toString())
+    localStorage.setItem('methil_maps_toll_price', tollPrice.value.toString())
+    localStorage.setItem('methil_maps_time_value', timeValue.value.toString())
+  }
+)
+
 // Initialize
 onMounted(() => {
   // Check saved theme or OS preference
@@ -1088,6 +1100,29 @@ onMounted(() => {
     } else {
       setLocale('fr')
     }
+  }
+
+  // Load saved settings from localStorage
+  const savedCriterion = localStorage.getItem('methil_maps_criterion')
+  if (savedCriterion) {
+    optimizationCriterion.value = savedCriterion as OptimizationCriterion
+    calculatedCriterion.value = savedCriterion as OptimizationCriterion
+  }
+  const savedFuelType = localStorage.getItem('methil_maps_fuel_type')
+  if (savedFuelType) {
+    fuelType.value = savedFuelType as FuelType
+  }
+  const savedFuelConsumption = localStorage.getItem('methil_maps_fuel_consumption')
+  if (savedFuelConsumption) {
+    fuelConsumption.value = parseFloat(savedFuelConsumption) || 7.0
+  }
+  const savedTollPrice = localStorage.getItem('methil_maps_toll_price')
+  if (savedTollPrice) {
+    tollPrice.value = parseFloat(savedTollPrice) || 0.13
+  }
+  const savedTimeValue = localStorage.getItem('methil_maps_time_value')
+  if (savedTimeValue) {
+    timeValue.value = parseFloat(savedTimeValue) || 20.0
   }
 
   loadStateFromUrl()
