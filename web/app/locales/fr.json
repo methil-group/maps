@@ -19,6 +19,7 @@
     "selected_locations": "Lieux Sélectionnés",
     "clear_route": "Effacer l'itinéraire",
     "optimized": "Optimisé",
+    "use_current_location": "Utiliser ma position actuelle",
     "see_algorithm_tip": "Voir comment l'algorithme découvre le trajet",
     "share_route_tip": "Partager cet itinéraire",
     "export_route_tip": "Exporter les données du trajet",
@@ -133,7 +134,12 @@
     "calculation_error": "Erreur de calcul",
     "calculation_error_desc": "Impossible de calculer l'itinéraire optimal. Veuillez réessayer.",
     "route_cleared": "Itinéraire effacé",
-    "route_cleared_desc": "L'itinéraire actuel a été supprimé."
+    "route_cleared_desc": "L'itinéraire actuel a été supprimé.",
+    "geolocation_error": "Erreur de géolocalisation",
+    "geolocation_unsupported": "La géolocalisation n'est pas supportée par votre navigateur.",
+    "geolocation_failed": "Géolocalisation échouée",
+    "geolocation_failed_desc": "Impossible d'obtenir votre position actuelle. Veuillez réessayer.",
+    "geolocation_permission_denied": "L'accès à la position a été refusé. Veuillez l'autoriser dans vos paramètres de navigation."
   },
   "common": {
     "add": "Ajouter",

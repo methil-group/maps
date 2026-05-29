@@ -79,15 +79,40 @@
                 :placeholder="t('planner.search_placeholder')"
                 class="w-full h-10 pl-3 pr-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet-500/20 focus:border-brand-violet-500 transition-all placeholder:text-slate-400"
               />
-              <div class="absolute right-3 top-3">
-                <svg v-if="isSearching" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 animate-spin text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
+              <div class="absolute right-2.5 top-2 flex items-center">
+                <!-- Search status / icon -->
+                <div class="p-1.5">
+                  <svg v-if="isSearching" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 animate-spin text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+                  </svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-else>
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </div>
               </div>
+            </div>
+
+            <!-- Utiliser ma position actuelle text link under the search input -->
+            <div class="flex justify-start">
+              <button
+                @click="useCurrentLocation"
+                :disabled="isLocating"
+                class="flex items-center gap-1.5 text-xs font-semibold text-brand-violet-600 hover:text-brand-violet-700 dark:text-brand-violet-400 dark:hover:text-brand-violet-300 transition-colors disabled:opacity-40 select-none group"
+              >
+                <svg v-if="isLocating" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 animate-pulse text-brand-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-brand-violet-500 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="22" y1="12" x2="18" y2="12"></line>
+                  <line x1="6" y1="12" x2="2" y2="12"></line>
+                  <line x1="12" y1="6" x2="12" y2="2"></line>
+                  <line x1="12" y1="22" x2="12" y2="18"></line>
+                </svg>
+                <span>{{ t('planner.use_current_location') }}</span>
+              </button>
             </div>
           </div>
 
@@ -132,9 +157,23 @@
             <!-- Empty state -->
             <div
               v-if="locations.length === 0"
-              class="p-5 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-center text-xs text-slate-400 dark:text-slate-500 leading-relaxed font-medium"
+              class="p-5 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-center text-xs text-slate-400 dark:text-slate-500 leading-relaxed font-medium space-y-3"
             >
-              {{ t('planner.no_locations') }}
+              <div>{{ t('planner.no_locations') }}</div>
+              <button
+                @click="useCurrentLocation"
+                :disabled="isLocating"
+                class="mx-auto flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[11px] transition-colors disabled:opacity-40"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" :class="{ 'animate-pulse text-brand-violet-500': isLocating }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="22" y1="12" x2="18" y2="12"></line>
+                  <line x1="6" y1="12" x2="2" y2="12"></line>
+                  <line x1="12" y1="6" x2="12" y2="2"></line>
+                  <line x1="12" y1="22" x2="12" y2="18"></line>
+                </svg>
+                <span>{{ t('planner.use_current_location') }}</span>
+              </button>
             </div>
 
             <!-- Stops list -->
@@ -378,6 +417,26 @@
             @map-click="addLocationFromCoordinates"
           />
         </client-only>
+
+        <!-- Floating Geolocation Button (matches Leaflet control style) -->
+        <button
+          @click="useCurrentLocation"
+          :disabled="isLocating"
+          class="absolute top-[88px] left-[10px] w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md rounded-lg text-slate-600 dark:text-slate-400 hover:text-brand-violet-600 dark:hover:text-brand-violet-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95 z-[1000] disabled:opacity-40 disabled:pointer-events-none"
+          :title="t('planner.use_current_location')"
+        >
+          <svg v-if="isLocating" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 animate-pulse text-brand-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="22" y1="12" x2="18" y2="12"></line>
+            <line x1="6" y1="12" x2="2" y2="12"></line>
+            <line x1="12" y1="6" x2="12" y2="2"></line>
+            <line x1="12" y1="22" x2="12" y2="18"></line>
+          </svg>
+        </button>
 
         <!-- Floating OSRM Fallback Warning -->
         <div v-if="isUsingOSRM && optimalRoute.length > 0" class="absolute top-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-amber-500/90 backdrop-blur-md text-slate-950 p-3 rounded-xl shadow-lg border border-amber-400/20 z-[1000] flex gap-2.5 animate-pop-in">
@@ -799,6 +858,86 @@ const handleSearch = () => {
       isSearching.value = false
     }
   }, 500)
+}
+
+const isLocating = ref(false)
+
+const useCurrentLocation = () => {
+  if (!navigator.geolocation) {
+    showNotification(
+      'error',
+      t('notifications.geolocation_error'),
+      t('notifications.geolocation_unsupported')
+    )
+    return
+  }
+  
+  isLocating.value = true
+  
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords
+      
+      const tempId = `loc_${Date.now()}`
+      const tempName = `${t('common.loading')} (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
+      
+      const newLoc: Location = {
+        id: tempId,
+        name: tempName,
+        lat: latitude,
+        lng: longitude,
+        order: locations.value.length + 1
+      }
+      
+      locations.value.push(newLoc)
+      clearRouteData()
+      isLocating.value = false
+      
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+          {
+            headers: {
+              'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+              'User-Agent': 'MethilMapsOptimizer/2.0'
+            }
+          }
+        )
+        if (response.ok) {
+          const data = await response.json()
+          const finalName = data.display_name || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
+          locations.value = locations.value.map(loc => 
+            loc.id === tempId ? { ...loc, name: finalName } : loc
+          )
+        } else {
+          locations.value = locations.value.map(loc => 
+            loc.id === tempId ? { ...loc, name: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` } : loc
+          )
+        }
+      } catch (e) {
+        locations.value = locations.value.map(loc => 
+          loc.id === tempId ? { ...loc, name: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` } : loc
+        )
+      }
+    },
+    (error) => {
+      isLocating.value = false
+      let desc = t('notifications.geolocation_failed_desc')
+      if (error.code === error.PERMISSION_DENIED) {
+        desc = t('notifications.geolocation_permission_denied')
+      }
+      showNotification(
+        'error',
+        t('notifications.geolocation_failed'),
+        desc
+      )
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  )
 }
 
 // Add location
