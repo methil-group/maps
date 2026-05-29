@@ -215,7 +215,8 @@ onMounted(async () => {
   if (!mapContainer.value) return
   
   map = L.map(mapContainer.value, {
-    zoomControl: false // custom position zoom control
+    zoomControl: false, // custom position zoom control
+    attributionControl: false // remove default Leaflet attribution at the bottom-right
   }).setView(defaultCenter, defaultZoom)
   
   // Add zoom control at top-left

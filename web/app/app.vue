@@ -322,7 +322,7 @@
               <div class="space-y-1.5">
                 <div class="flex items-center justify-between text-xs font-bold">
                   <span class="text-slate-600 dark:text-slate-400">{{ t('settings.toll_price') }}</span>
-                  <span class="text-brand-violet-600 font-mono">{{ tollPrice.toFixed(3) }} €/km</span>
+                  <span class="text-brand-violet-600 font-mono">{{ tollPrice.toFixed(2) }} €/km</span>
                 </div>
                 <input
                   type="range"
@@ -332,6 +332,9 @@
                   v-model.number="tollPrice"
                   class="w-full h-1 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-violet-600"
                 />
+                <p class="text-[10px] text-slate-400 dark:text-slate-500 leading-normal">
+                  {{ t('settings.toll_price_hint') }}
+                </p>
               </div>
             </div>
           </div>
@@ -513,7 +516,19 @@
       :isOpen="isAnalysisOpen"
       :locations="locations"
       :totalDistance="totalDistance"
+      :totalDuration="totalDuration"
+      :totalFuelCost="totalFuelCost"
+      :totalTollCost="totalTollCost"
+      :calculatedCriterion="calculatedCriterion"
+      :fuelType="fuelType"
+      :fuelConsumption="fuelConsumption"
+      :fuelPrice="fuelPrice"
+      :tollPrice="tollPrice"
+      :timeValue="timeValue"
       :distanceMatrix="routeOptimizer.distanceMatrix"
+      :durationMatrix="routeOptimizer.durationMatrix"
+      :fuelCostMatrix="routeOptimizer.fuelCostMatrix"
+      :tollCostMatrix="routeOptimizer.tollCostMatrix"
       @close="isAnalysisOpen = false"
     />
 
@@ -649,6 +664,8 @@ const totalFuelCost = ref(0)
 const totalTollCost = ref(0)
 const isUsingOSRM = ref(false)
 
+let isInitializing = true
+
 // Optimization configurations
 const optimizationCriterion = ref<OptimizationCriterion>('distance')
 const calculatedCriterion = ref<OptimizationCriterion>('distance')
@@ -656,7 +673,7 @@ const fuelType = ref<FuelType>('Gazole')
 const fuelConsumption = ref(7.0)
 const fuelPrice = ref(1.80)
 const tollPrice = ref(0.13)
-const timeValue = ref(20.0)
+const timeValue = ref(15.0)
 
 // Search inputs
 const searchQuery = ref('')
@@ -784,7 +801,6 @@ const addLocation = (res: any) => {
   searchQuery.value = ''
   searchResults.value = []
   clearRouteData()
-  syncStateToUrl()
 }
 
 // Click / Long Press Map adding
@@ -802,7 +818,6 @@ const addLocationFromCoordinates = async (lat: number, lng: number) => {
   
   locations.value.push(newLoc)
   clearRouteData()
-  syncStateToUrl()
   
   try {
     const response = await fetch(
@@ -830,7 +845,6 @@ const addLocationFromCoordinates = async (lat: number, lng: number) => {
       loc.id === tempId ? { ...loc, name: `${lat.toFixed(5)}, ${lng.toFixed(5)}` } : loc
     )
   }
-  syncStateToUrl()
 }
 
 // Remove stop
@@ -839,7 +853,6 @@ const removeLocation = (id: string) => {
     .filter(loc => loc.id !== id)
     .map((loc, idx) => ({ ...loc, order: idx + 1 }))
   clearRouteData()
-  syncStateToUrl()
 }
 
 // Re-order stops
@@ -854,7 +867,6 @@ const moveLocation = (index: number, direction: 'up' | 'down') => {
   
   locations.value = updated.map((loc, idx) => ({ ...loc, order: idx + 1 }))
   clearRouteData()
-  syncStateToUrl()
 }
 
 // Drag and drop states & handlers
@@ -885,7 +897,6 @@ const onDragOver = (index: number) => {
 const onDragEnd = () => {
   draggedIdx.value = null
   clearRouteData()
-  syncStateToUrl()
 }
 
 const clearLocations = () => {
@@ -932,6 +943,9 @@ const calculateRoute = async () => {
     
     // Freeze calculated criterion badge
     calculatedCriterion.value = optimizationCriterion.value
+    
+    // Sync state to URL upon successful calculation
+    syncStateToUrl()
   } catch (e: any) {
     console.error('Calculation error:', e)
     showNotification(
@@ -1032,19 +1046,12 @@ const shareRoute = () => {
 
 // Observers
 watch(fuelType, async (newType) => {
+  if (isInitializing) return
   const price = await fetchAverageFuelPrice(newType)
   if (price !== null) {
     fuelPrice.value = parseFloat(price.toFixed(5))
   }
-  syncStateToUrl()
 })
-
-watch(
-  [optimizationCriterion, fuelConsumption, fuelPrice, tollPrice, timeValue],
-  () => {
-    syncStateToUrl()
-  }
-)
 
 // Initialize
 onMounted(() => {
@@ -1085,9 +1092,26 @@ onMounted(() => {
 
   loadStateFromUrl()
   
-  // Auto-run computation if locations are fully loaded from URL parameters
-  if (locations.value.length >= 2) {
-    calculateRoute()
+  if (!route.query.fp) {
+    fetchAverageFuelPrice(fuelType.value)
+      .then((price) => {
+        if (price !== null) {
+          fuelPrice.value = parseFloat(price.toFixed(5))
+        }
+      })
+      .finally(() => {
+        isInitializing = false
+        // Auto-run computation if locations are fully loaded from URL parameters
+        if (locations.value.length >= 2) {
+          calculateRoute()
+        }
+      })
+  } else {
+    isInitializing = false
+    // Auto-run computation if locations are fully loaded from URL parameters
+    if (locations.value.length >= 2) {
+      calculateRoute()
+    }
   }
 })
 </script>
