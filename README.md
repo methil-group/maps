@@ -15,13 +15,22 @@ Planning a trip with multiple stops can be a headache, especially when you're tr
     *   **Shortest**: The minimum distance path.
     *   **Economic**: Minimizes total cost (Fuel + Tolls).
     *   **Smart (Balanced)**: The perfect trade-off between time and money.
-*   **⛽ Personalized Costs**: Input your car's actual consumption (L/100km) and current fuel prices to get hyper-accurate cost estimates.
+    *   **Toll-free**: Avoids toll roads to plan the best free route.
+*   **⛽ Personalized Costs**: Input your car's actual consumption (L/100km) and select fuel types (Diesel, E10, SP95/98, LPG) with live-calculated average prices to get hyper-accurate cost estimates.
 *   **🌐 Hybrid Routing Engine**: Seamlessly falls back to the public OSRM (Open Source Routing Machine) API if any coordinates are outside the downloaded map area (out-of-bounds), combining global routing capability with local high-performance custom-cost pathfinding.
 *   **🗺️ Raw OSM Processing**: Unlike generic wrappers, our Go engine parses high-volume `.pbf` data directly, understanding road types, speed limits, and toll sections at a granular level.
-*   **📍 Interactive Map Selection**: Long-press on the map to add destinations instantly without losing your zoom level or map position.
-*   **🎨 Premium Interface**: A sleek, modern dashboard built with Nuxt, Vue 3, and Tailwind CSS, featuring interactive Leaflet maps (with customized CartoDB tiles) and real-time floating route analysis.
-*   **🌍 Multi-Language Support**: Fully localized in French and English.
-*   **🔗 State Persistence**: Your entire configuration (stops, settings, route) is encoded in the URL, making it easy to share or bookmark.
+*   **📍 Interactive Map Selection**: Long-press on the map to add destinations instantly, drag-and-drop stops list items to re-order, or use manual up/down controls.
+*   **🗺️ Live Geolocation & Tracking**: Opt-in to track your position in real-time, rendered as a custom pulsing blue dot on the map. The map automatically centers on your location on startup or when clearing stops, and you can instantly add a static snapshot of your location to the route.
+*   **📈 Rich Diagnostic & Leg Analysis**: An in-depth analysis modal offering:
+    *   Estimated total trip budget and CO₂ footprint based on engine type.
+    *   Fuel vs. Tolls budget share visualization progress bars.
+    *   Leg-by-leg breakdowns showing distance, duration, fuel cost, toll cost, and total direct cost.
+    *   Automatic highlighting of the **Most Expensive** and **Longest** legs.
+*   **🚗 External Navigators Sync**:
+    *   **Google Maps Redirection**: Export the exact computed route sequence with up to 75 coordinate waypoints to lock the path in Google Maps directions.
+    *   **GPX Route Exporter**: Download standard GPX files containing stops as waypoints and the precise track route shape for outdoor navigators (Garmin, Strava, OsmAnd, etc.).
+*   **🎨 Premium UI/UX Design**: A sleek, modern dashboard built with Nuxt 4, Vue 3, and Tailwind CSS, featuring CartoDB responsive light/dark maps, collapsible widgets, and glassmorphic glowing overlay cards.
+*   **🌍 Multi-Language & Settings Persistence**: Fully localized in French and English with settings automatically saved in `localStorage` and URL query parameter sync for bookmarking or sharing.
 
 ---
 
