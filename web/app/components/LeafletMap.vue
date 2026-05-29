@@ -46,6 +46,7 @@ const defaultZoom = 8
 // Map press state
 let pressTimer: any = null
 let startLatLng: any = null
+const hasCenteredOnUserLocation = ref(false)
 
 const startPress = (latlng: any) => {
   startLatLng = latlng
@@ -299,9 +300,15 @@ onMounted(async () => {
   map.on('touchend', () => cancelPress())
   map.on('touchmove', (e: any) => checkMove(e.latlng))
   
-  // Center map on Rhône-Alpes if we have no stops yet
+  // Center map on user location if available, otherwise default to Rhône-Alpes
   if (props.locations.length === 0) {
-    map.setView(defaultCenter, defaultZoom)
+    if (props.currentUserLocation) {
+      const { lat, lng } = props.currentUserLocation
+      map.setView([lat, lng], 13)
+      hasCenteredOnUserLocation.value = true
+    } else {
+      map.setView(defaultCenter, defaultZoom)
+    }
   } else {
     // Fit bounds of locations
     const bounds = L.latLngBounds(props.locations.map(loc => [loc.lat, loc.lng]))
@@ -335,8 +342,15 @@ watch(() => props.theme, (newTheme) => {
 watch(() => props.locations, () => {
   updateMarkers()
   
-  // Auto-adjust view when a location is added
-  if (map && props.locations.length > 0 && props.optimalRoute.length === 0) {
+  // Auto-adjust view when stops are modified or cleared
+  if (map && props.locations.length === 0) {
+    if (props.currentUserLocation) {
+      const { lat, lng } = props.currentUserLocation
+      map.setView([lat, lng], 13)
+    } else {
+      map.setView(defaultCenter, defaultZoom)
+    }
+  } else if (map && props.locations.length > 0 && props.optimalRoute.length === 0) {
     const bounds = L.latLngBounds(props.locations.map(loc => [loc.lat, loc.lng]))
     map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 })
   }
@@ -354,6 +368,15 @@ watch(() => props.animationProgress, () => {
 
 watch(() => props.currentUserLocation, () => {
   updateUserLocationMarker()
+  
+  // Auto-center map on user's current location the first time it is resolved (if list is empty)
+  if (props.currentUserLocation && !hasCenteredOnUserLocation.value && props.locations.length === 0) {
+    const { lat, lng } = props.currentUserLocation
+    if (map) {
+      map.setView([lat, lng], 13)
+      hasCenteredOnUserLocation.value = true
+    }
+  }
 }, { deep: true })
 
 watch(() => props.currentLocationLabel, () => {
