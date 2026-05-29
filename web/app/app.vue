@@ -142,19 +142,38 @@
               <div
                 v-for="(loc, idx) in locations"
                 :key="loc.id"
-                class="flex items-center gap-2.5 p-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl hover:border-slate-300 dark:hover:border-slate-700 transition-all group"
+                draggable="true"
+                @dragstart="onDragStart($event, idx)"
+                @dragover.prevent="onDragOver(idx)"
+                @dragend="onDragEnd"
+                class="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 border rounded-xl transition-all group cursor-grab active:cursor-grabbing p-1.5"
+                :class="draggedIdx === idx 
+                  ? 'opacity-40 border-dashed border-brand-violet-400 dark:border-brand-violet-800 bg-brand-violet-50/10'
+                  : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'"
               >
+                <!-- Drag Grip Icon -->
+                <div class="text-slate-400 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 shrink-0 select-none cursor-grab">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="5" r="1"></circle>
+                    <circle cx="9" cy="12" r="1"></circle>
+                    <circle cx="9" cy="19" r="1"></circle>
+                    <circle cx="15" cy="5" r="1"></circle>
+                    <circle cx="15" cy="12" r="1"></circle>
+                    <circle cx="15" cy="19" r="1"></circle>
+                  </svg>
+                </div>
+
                 <!-- Order Badge -->
                 <div
-                  class="w-5.5 h-5.5 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0"
+                  class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-extrabold text-white shrink-0 select-none"
                   :class="idx === 0 ? 'bg-emerald-500' : (idx === locations.length - 1 ? 'bg-slate-900' : 'bg-brand-violet-600')"
                 >
                   {{ idx + 1 }}
                 </div>
 
                 <!-- Stop Name -->
-                <div class="flex-1 min-w-0">
-                  <div class="font-bold text-xs text-slate-800 dark:text-slate-200 truncate pr-2">
+                <div class="flex-1 min-w-0 select-none">
+                  <div class="font-bold text-xs text-slate-800 dark:text-slate-200 truncate pr-1">
                     {{ loc.name.split(',')[0] }}
                   </div>
                 </div>
@@ -166,7 +185,7 @@
                     :disabled="idx === 0"
                     class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="18 15 12 9 6 15"></polyline>
                     </svg>
                   </button>
@@ -175,7 +194,7 @@
                     :disabled="idx === locations.length - 1"
                     class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
                   </button>
@@ -183,9 +202,9 @@
                   <!-- Remove Stop -->
                   <button
                     @click="removeLocation(loc.id)"
-                    class="p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/30 text-rose-500 hover:text-rose-600 transition-colors ml-1"
+                    class="p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/30 text-rose-500 hover:text-rose-600 transition-colors ml-0.5"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18"></line>
                       <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
@@ -235,7 +254,8 @@
           <div class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-slate-50/50 dark:bg-slate-950/20">
             <button
               @click="isSettingsOpen = !isSettingsOpen"
-              class="w-full p-4 flex items-center justify-between font-bold text-sm text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              class="w-full p-4 flex items-center justify-between font-bold text-sm text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              :class="isSettingsOpen ? 'border-b border-slate-200 dark:border-slate-800' : 'border-b border-transparent'"
             >
               <div class="flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-brand-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -833,6 +853,37 @@ const moveLocation = (index: number, direction: 'up' | 'down') => {
   updated[targetIndex] = temp
   
   locations.value = updated.map((loc, idx) => ({ ...loc, order: idx + 1 }))
+  clearRouteData()
+  syncStateToUrl()
+}
+
+// Drag and drop states & handlers
+const draggedIdx = ref<number | null>(null)
+
+const onDragStart = (event: DragEvent, index: number) => {
+  draggedIdx.value = index
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', index.toString())
+  }
+}
+
+const onDragOver = (index: number) => {
+  if (draggedIdx.value === null || draggedIdx.value === index) return
+  
+  const items = [...locations.value]
+  const draggedItem = items[draggedIdx.value]
+  
+  // Swap items dynamically in the list for real-time visual feedback
+  items.splice(draggedIdx.value, 1)
+  items.splice(index, 0, draggedItem)
+  
+  locations.value = items.map((loc, i) => ({ ...loc, order: i + 1 }))
+  draggedIdx.value = index
+}
+
+const onDragEnd = () => {
+  draggedIdx.value = null
   clearRouteData()
   syncStateToUrl()
 }

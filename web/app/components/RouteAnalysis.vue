@@ -37,7 +37,7 @@
           <h4 class="text-sm font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
             {{ t('analysis.summary') }}
           </h4>
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl">
               <div class="text-xs text-slate-400 dark:text-slate-500 font-medium">{{ t('analysis.total_distance') }}</div>
               <div class="text-lg font-bold text-brand-violet-600 dark:text-brand-violet-400 mt-1 font-mono">
@@ -61,13 +61,6 @@
                 <template v-else>
                   —
                 </template>
-              </div>
-            </div>
-
-            <div class="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl">
-              <div class="text-xs text-slate-400 dark:text-slate-500 font-medium">{{ t('analysis.route_type') }}</div>
-              <div class="text-lg font-bold text-slate-900 dark:text-white mt-1">
-                {{ t('analysis.one_way') }}
               </div>
             </div>
           </div>
