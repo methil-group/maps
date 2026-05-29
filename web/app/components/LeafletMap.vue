@@ -21,6 +21,9 @@ const props = defineProps<{
   theme: 'light' | 'dark'
   isAnimating: boolean
   animationProgress: number
+  currentUserLocation?: { lat: number; lng: number } | null
+  currentLocationLabel?: string
+  stopLabel?: string
 }>()
 
 const emit = defineEmits<{
@@ -34,6 +37,7 @@ let markersGroup: any = null
 let routePolyline: any = null
 let glowPolyline: any = null
 let L: any = null
+let userLocationMarker: any = null
 
 // Coordinates for Rhône-Alpes (centered on Lyon)
 const defaultCenter: [number, number] = [45.7578137, 4.8320114]
@@ -157,7 +161,7 @@ const updateMarkers = () => {
     // Popup details
     marker.bindPopup(`
       <div class="text-sm">
-        <div class="font-bold text-brand-violet-700 dark:text-brand-violet-400">Étape ${loc.order}</div>
+        <div class="font-bold text-brand-violet-700 dark:text-brand-violet-400">${props.stopLabel || 'Étape'} ${loc.order}</div>
         <div class="text-slate-700 dark:text-slate-300 font-medium mt-0.5 leading-tight">${loc.name.split(',')[0]}</div>
         <div class="text-slate-400 dark:text-slate-500 text-xs mt-1 font-mono">${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</div>
       </div>
@@ -165,6 +169,53 @@ const updateMarkers = () => {
     
     markersGroup.addLayer(marker)
   })
+}
+
+const updateUserLocationMarker = () => {
+  if (!map || !L) return
+  
+  if (props.currentUserLocation) {
+    const { lat, lng } = props.currentUserLocation
+    
+    if (userLocationMarker) {
+      // Smoothly update position without destroying the marker
+      userLocationMarker.setLatLng([lat, lng])
+      userLocationMarker.bindPopup(`
+        <div class="text-xs font-semibold text-slate-800 dark:text-slate-200">
+          ${props.currentLocationLabel || 'Votre position actuelle'}
+        </div>
+      `)
+    } else {
+      const blueDotIcon = L.divIcon({
+        className: 'user-location-marker-container',
+        html: `
+          <div class="user-location-marker">
+            <div class="user-location-marker-pulse"></div>
+            <div class="user-location-marker-dot"></div>
+          </div>
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      })
+      
+      userLocationMarker = L.marker([lat, lng], {
+        icon: blueDotIcon,
+        zIndexOffset: 1000
+      }).addTo(map)
+      
+      userLocationMarker.bindPopup(`
+        <div class="text-xs font-semibold text-slate-800 dark:text-slate-200">
+          ${props.currentLocationLabel || 'Votre position actuelle'}
+        </div>
+      `)
+    }
+  } else {
+    // Clean up if location tracking is lost or permission is revoked
+    if (userLocationMarker) {
+      map.removeLayer(userLocationMarker)
+      userLocationMarker = null
+    }
+  }
 }
 
 // Drawing route helper
@@ -259,10 +310,15 @@ onMounted(async () => {
   
   updateMarkers()
   updateRoute()
+  updateUserLocationMarker()
 })
 
 onBeforeUnmount(() => {
   if (pressTimer) clearTimeout(pressTimer)
+  if (userLocationMarker && map) {
+    map.removeLayer(userLocationMarker)
+    userLocationMarker = null
+  }
   if (map) {
     map.remove()
     map = null
@@ -295,6 +351,18 @@ watch(() => props.animationProgress, () => {
     updateRoute()
   }
 })
+
+watch(() => props.currentUserLocation, () => {
+  updateUserLocationMarker()
+}, { deep: true })
+
+watch(() => props.currentLocationLabel, () => {
+  updateUserLocationMarker()
+})
+
+watch(() => props.stopLabel, () => {
+  updateMarkers()
+})
 </script>
 
 <style>
@@ -305,5 +373,55 @@ watch(() => props.animationProgress, () => {
 
 .custom-map-marker-flag div {
   transform: translateY(-8px);
+}
+
+/* Pulsing blue user location marker */
+.user-location-marker-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible !important;
+}
+
+.user-location-marker {
+  position: relative;
+  width: 14px;
+  height: 14px;
+}
+
+.user-location-marker-dot {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  background-color: #3b82f6;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+.user-location-marker-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  background-color: rgba(59, 130, 246, 0.4);
+  border-radius: 50%;
+  animation: user-location-pulse 2s infinite ease-out;
+  z-index: 1;
+}
+
+@keyframes user-location-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(3.5);
+    opacity: 0;
+  }
 }
 </style>

@@ -20,6 +20,7 @@
     "clear_route": "Effacer l'itinéraire",
     "optimized": "Optimisé",
     "use_current_location": "Utiliser ma position actuelle",
+    "current_location": "Votre position actuelle",
     "see_algorithm_tip": "Voir comment l'algorithme découvre le trajet",
     "share_route_tip": "Partager cet itinéraire",
     "export_route_tip": "Exporter les données du trajet",

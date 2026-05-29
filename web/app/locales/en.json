@@ -20,6 +20,7 @@
     "clear_route": "Clear Route",
     "optimized": "Optimized",
     "use_current_location": "Use my current location",
+    "current_location": "Your current location",
     "see_algorithm_tip": "See how the algorithm discovers the route",
     "share_route_tip": "Share this route",
     "export_route_tip": "Export route data",

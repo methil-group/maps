@@ -414,6 +414,9 @@
             :theme="theme"
             :isAnimating="isAnimating"
             :animationProgress="animationProgress"
+            :currentUserLocation="currentUserLocation"
+            :currentLocationLabel="t('planner.current_location')"
+            :stopLabel="t('common.stop')"
             @map-click="addLocationFromCoordinates"
           />
         </client-only>
@@ -680,7 +683,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, reactive } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, reactive } from 'vue'
 import { useRoute, useRouter } from 'nuxt/app'
 import { useTrans } from './composables/useTrans'
 import { fetchAverageFuelPrice } from './utils/fuelApi'
@@ -861,8 +864,87 @@ const handleSearch = () => {
 }
 
 const isLocating = ref(false)
+const currentUserLocation = ref<{ lat: number; lng: number } | null>(null)
+const addStopOnLocationAcquired = ref(false)
+let locationWatchId: any = null
+
+const startWatchingLocation = () => {
+  if (typeof window === 'undefined' || locationWatchId !== null || !navigator.geolocation) return
+  
+  locationWatchId = navigator.geolocation.watchPosition(
+    (position) => {
+      const lat = position.coords.latitude
+      const lng = position.coords.longitude
+      currentUserLocation.value = { lat, lng }
+      
+      if (addStopOnLocationAcquired.value) {
+        addStopOnLocationAcquired.value = false
+        isLocating.value = false
+        addLocationFromCoordinates(lat, lng)
+      }
+    },
+    (error) => {
+      console.warn("Geolocation watch error:", error)
+      currentUserLocation.value = null
+      
+      if (addStopOnLocationAcquired.value) {
+        addStopOnLocationAcquired.value = false
+        isLocating.value = false
+        
+        let desc = t('notifications.geolocation_failed_desc')
+        if (error.code === error.PERMISSION_DENIED) {
+          desc = t('notifications.geolocation_permission_denied')
+        }
+        showNotification(
+          'error',
+          t('notifications.geolocation_failed'),
+          desc
+        )
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  )
+}
+
+const stopWatchingLocation = () => {
+  if (locationWatchId !== null) {
+    navigator.geolocation.clearWatch(locationWatchId)
+    locationWatchId = null
+  }
+  currentUserLocation.value = null
+  addStopOnLocationAcquired.value = false
+}
+
+const checkGeolocationPermission = async () => {
+  if (typeof window === 'undefined' || !navigator.permissions || !navigator.permissions.query) return
+  try {
+    const result = await navigator.permissions.query({ name: 'geolocation' as any })
+    if (result.state === 'granted') {
+      startWatchingLocation()
+    }
+    result.onchange = () => {
+      if (result.state === 'granted') {
+        startWatchingLocation()
+      } else {
+        stopWatchingLocation()
+      }
+    }
+  } catch (e) {
+    console.error("Error querying geolocation permission:", e)
+  }
+}
 
 const useCurrentLocation = () => {
+  if (currentUserLocation.value) {
+    const { lat, lng } = currentUserLocation.value
+    addLocationFromCoordinates(lat, lng)
+    return
+  }
+  
   if (!navigator.geolocation) {
     showNotification(
       'error',
@@ -872,72 +954,9 @@ const useCurrentLocation = () => {
     return
   }
   
+  addStopOnLocationAcquired.value = true
   isLocating.value = true
-  
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const { latitude, longitude } = position.coords
-      
-      const tempId = `loc_${Date.now()}`
-      const tempName = `${t('common.loading')} (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
-      
-      const newLoc: Location = {
-        id: tempId,
-        name: tempName,
-        lat: latitude,
-        lng: longitude,
-        order: locations.value.length + 1
-      }
-      
-      locations.value.push(newLoc)
-      clearRouteData()
-      isLocating.value = false
-      
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-          {
-            headers: {
-              'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
-              'User-Agent': 'MethilMapsOptimizer/2.0'
-            }
-          }
-        )
-        if (response.ok) {
-          const data = await response.json()
-          const finalName = data.display_name || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
-          locations.value = locations.value.map(loc => 
-            loc.id === tempId ? { ...loc, name: finalName } : loc
-          )
-        } else {
-          locations.value = locations.value.map(loc => 
-            loc.id === tempId ? { ...loc, name: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` } : loc
-          )
-        }
-      } catch (e) {
-        locations.value = locations.value.map(loc => 
-          loc.id === tempId ? { ...loc, name: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` } : loc
-        )
-      }
-    },
-    (error) => {
-      isLocating.value = false
-      let desc = t('notifications.geolocation_failed_desc')
-      if (error.code === error.PERMISSION_DENIED) {
-        desc = t('notifications.geolocation_permission_denied')
-      }
-      showNotification(
-        'error',
-        t('notifications.geolocation_failed'),
-        desc
-      )
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
-    }
-  )
+  startWatchingLocation()
 }
 
 // Add location
@@ -957,7 +976,7 @@ const addLocation = (res: any) => {
 }
 
 // Click / Long Press Map adding
-const addLocationFromCoordinates = async (lat: number, lng: number) => {
+async function addLocationFromCoordinates(lat: number, lng: number) {
   const tempId = `click_${Date.now()}`
   const tempName = `${t('common.loading')} (${lat.toFixed(4)}, ${lng.toFixed(4)})`
   
@@ -1379,6 +1398,12 @@ onMounted(() => {
       calculateRoute()
     }
   }
+
+  checkGeolocationPermission()
+})
+
+onBeforeUnmount(() => {
+  stopWatchingLocation()
 })
 </script>
 
