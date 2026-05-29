@@ -481,9 +481,9 @@
 
             <div class="space-y-1.5">
               <div class="grid grid-cols-2 gap-1.5">
-                <!-- Export json -->
+                <!-- Export GPX -->
                 <button
-                  @click="exportRouteData"
+                  @click="exportRouteGPX"
                   class="flex items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1023,26 +1023,69 @@ const formatDuration = (sec: number) => {
   return `${minutes} min`
 }
 
-// Export route data as JSON file download
-const exportRouteData = () => {
+// Export route data as GPX file download
+const exportRouteGPX = () => {
   if (optimalRoute.value.length === 0) return
   
-  const data = {
-    locations: locations.value,
-    totalDistance: totalDistance.value,
-    totalDuration: totalDuration.value,
-    totalFuelCost: totalFuelCost.value,
-    totalTollCost: totalTollCost.value,
-    optimalRoute: optimalRoute.value
+  let gpx = '<?xml version="1.0" encoding="UTF-8"?>\n'
+  gpx += '<gpx version="1.1" creator="MethilMaps Route Optimiser"\n'
+  gpx += '     xmlns="http://www.topografix.com/GPX/1/1"\n'
+  gpx += '     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n'
+  gpx += '     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">\n'
+  
+  // Metadata
+  gpx += '  <metadata>\n'
+  gpx += '    <name>Methil Maps Optimized Route</name>\n'
+  const distKm = (totalDistance.value / 1000).toFixed(2)
+  gpx += `    <desc>Optimized route. Total distance: ${distKm} km, Duration: ${formatDuration(totalDuration.value)}</desc>\n`
+  gpx += `    <time>${new Date().toISOString()}</time>\n`
+  gpx += '  </metadata>\n'
+  
+  // Waypoints (Stops)
+  locations.value.forEach((loc, idx) => {
+    // Escape XML special characters in name
+    const escapedName = loc.name
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;')
+    
+    gpx += `  <wpt lat="${loc.lat}" lon="${loc.lng}">\n`
+    gpx += `    <name>${idx === 0 ? 'Start: ' : idx === locations.value.length - 1 ? 'End: ' : `${idx}. `}${escapedName}</name>\n`
+    gpx += '  </wpt>\n'
+  })
+  
+  // Route Track (Exact road path)
+  if (optimalRoute.value.length > 0) {
+    gpx += '  <trk>\n'
+    gpx += '    <name>Optimized Path</name>\n'
+    gpx += '    <trkseg>\n'
+    optimalRoute.value.forEach(([lat, lng]) => {
+      gpx += `      <trkpt lat="${lat}" lon="${lng}" />\n`
+    })
+    gpx += '    </trkseg>\n'
+    gpx += '  </trk>\n'
   }
   
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2))
+  gpx += '</gpx>'
+  
+  const blob = new Blob([gpx], { type: 'application/gpx+xml;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
   const downloadAnchor = document.createElement('a')
-  downloadAnchor.setAttribute("href", dataStr)
-  downloadAnchor.setAttribute("download", `methil-route-${Date.now()}.json`)
+  downloadAnchor.setAttribute("href", url)
+  downloadAnchor.setAttribute("download", `methil-route-${Date.now()}.gpx`)
   document.body.appendChild(downloadAnchor)
   downloadAnchor.click()
   downloadAnchor.remove()
+  URL.revokeObjectURL(url)
+
+  // Show success notification
+  showNotification(
+    'success',
+    t('planner.export'),
+    t('notifications.export_desc')
+  )
 }
 
 // Google Maps redirection
