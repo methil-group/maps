@@ -479,24 +479,38 @@
               </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-1.5">
-              <!-- Export json -->
-              <button
-                @click="exportRouteData"
-                class="flex items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                <span>{{ t('planner.export') }}</span>
-              </button>
+            <div class="space-y-1.5">
+              <div class="grid grid-cols-2 gap-1.5">
+                <!-- Export json -->
+                <button
+                  @click="exportRouteData"
+                  class="flex items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>{{ t('planner.export') }}</span>
+                </button>
+
+                <!-- Google Maps -->
+                <button
+                  @click="redirectToGoogleMaps"
+                  class="flex items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                  <span>Google Maps</span>
+                </button>
+              </div>
 
               <!-- Open Detailed Analysis Modal -->
               <button
                 @click="isAnalysisOpen = true"
-                class="flex items-center justify-center gap-1.5 py-2 rounded-lg bg-brand-violet-50 hover:bg-brand-violet-100 dark:bg-brand-violet-950/40 dark:hover:bg-brand-violet-950/60 text-brand-violet-600 dark:text-brand-violet-400 text-xs font-extrabold transition-colors border border-brand-violet-200/20 whitespace-nowrap"
+                class="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-brand-violet-50 hover:bg-brand-violet-100 dark:bg-brand-violet-950/40 dark:hover:bg-brand-violet-950/60 text-brand-violet-600 dark:text-brand-violet-400 text-xs font-extrabold transition-colors border border-brand-violet-200/20 whitespace-nowrap"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="20" x2="18" y2="10"></line>
@@ -1029,6 +1043,16 @@ const exportRouteData = () => {
   document.body.appendChild(downloadAnchor)
   downloadAnchor.click()
   downloadAnchor.remove()
+}
+
+// Google Maps redirection
+const redirectToGoogleMaps = () => {
+  if (locations.value.length < 2) return
+  
+  const pathStops = locations.value.map(loc => `${loc.lat},${loc.lng}`).join('/')
+  const url = `https://www.google.com/maps/dir/${pathStops}/data=!4m2!4m1!3e0`
+  
+  window.open(url, '_blank')
 }
 
 // Share route URL link
