@@ -3,12 +3,13 @@ package main
 import (
 	"container/heap"
 	"errors"
+	"fmt"
 	"math"
 )
 
-// --- Priority Queue implementation for A* ---
+// --- Priority Queue implementation for A* (Zero Allocations on heap operations) ---
 type Item struct {
-	NodeID   int64
+	NodeID   int32
 	Priority float64 // f-score (g + h)
 	Index    int
 }
@@ -46,36 +47,25 @@ func (pq *PriorityQueue) Pop() interface{} {
 
 // --- End Priority Queue ---
 
-func (g *Graph) FindNearestNode(lat, lng float64) (int64, error) {
-	if len(g.Nodes) == 0 {
+// FindNearestNode recherche le nœud le plus proche en O(log N) à l'aide du KD-Tree
+func (g *Graph) FindNearestNode(lat, lng float64) (int32, error) {
+	if g.KDTree == nil || g.KDTree.Root == nil {
 		return 0, errors.New("graphe vide")
 	}
-
-	var bestID int64
-	minDist := math.MaxFloat64
-
-	for id, node := range g.Nodes {
-		// Heuristique simple au carré pour aller plus vite (Pythagore approximatif)
-		dLat := node.Lat - lat
-		dLng := (node.Lng - lng) * math.Cos(lat*math.Pi/180)
-		distSq := dLat*dLat + dLng*dLng
-
-		if distSq < minDist {
-			minDist = distSq
-			bestID = id
-		}
+	bestID := g.KDTree.FindNearest(lat, lng)
+	if bestID == -1 {
+		return 0, errors.New("aucun nœud trouvé")
 	}
-
 	return bestID, nil
 }
 
 type RoutingParams struct {
-	Criterion      string  // "distance", "time", "fuel", "toll", "balanced"
-	FuelPrice      float64 // prix au litre
-	Consumption    float64 // L/100km
-	TollPrice      float64 // prix au km (ex: 0.13)
-	TimeValue      float64 // prix de l'heure (ex: 20.0)
-	TollWeight     float64 // facteur pour les péages (ex: 1.0)
+	Criterion   string  // "distance", "time", "fuel", "toll", "balanced"
+	FuelPrice   float64 // prix au litre
+	Consumption float64 // L/100km
+	TollPrice   float64 // prix au km (ex: 0.13)
+	TimeValue   float64 // prix de l'heure (ex: 20.0)
+	TollWeight  float64 // facteur pour les péages (ex: 1.0)
 }
 
 type SegmentDetail struct {
@@ -143,6 +133,15 @@ func (g *Graph) IsCoordinatesInMapBounds(lat, lng float64) bool {
 	return Haversine(lat, lng, clampLat, clampLng) <= 10000
 }
 
+// PlaneDistance calcule la distance plane locale approximée (très rapide, pas de trigonométrie lourde)
+func PlaneDistance(lat1, lng1, lat2, lng2, factorLng float64) float64 {
+	const R = 6371000.0
+	const degToRad = math.Pi / 180.0
+	dLat := (lat2 - lat1) * degToRad
+	dLng := (lng2 - lng1) * degToRad * factorLng
+	return R * math.Sqrt(dLat*dLat + dLng*dLng)
+}
+
 func (g *Graph) FindRoute(startLat, startLng, endLat, endLng float64, params RoutingParams) (*RouteResult, error) {
 	if !g.IsCoordinatesInMapBounds(startLat, startLng) || !g.IsCoordinatesInMapBounds(endLat, endLng) {
 		return nil, ErrOutOfBounds
@@ -178,24 +177,46 @@ func (g *Graph) FindRoute(startLat, startLng, endLat, endLng float64, params Rou
 
 	endNode := g.Nodes[endID]
 
-	gScore := make(map[int64]float64)
-	cameFrom := make(map[int64]int64)
-	edgeUsed := make(map[int64]Edge) // Stocker l'arête spécifique utilisée
+	// 1. Précalcul du facteur de projection pour la longitude (trigonométrie unique)
+	factorLng := math.Cos(((startLat + endLat) / 2.0) * math.Pi / 180.0)
 
+	// 2. Remplacement des maps par des slices pré-alloués (Évite les overheads du Garbage Collector)
+	numNodes := len(g.Nodes)
+	gScore := make([]float64, numNodes)
+	for i := range gScore {
+		gScore[i] = math.MaxFloat64
+	}
 	gScore[startID] = 0
 
-	pq := make(PriorityQueue, 0)
-	heap.Init(&pq)
-	heap.Push(&pq, &Item{
-		NodeID:   startID,
-		Priority: 0,
-	})
+	cameFrom := make([]int32, numNodes)
+	for i := range cameFrom {
+		cameFrom[i] = -1
+	}
 
-	visited := make(map[int64]bool)
+	edgeUsed := make([]Edge, numNodes)
+	visited := make([]bool, numNodes)
+
+	// 4. File d'attente à priorité réutilisable (zéro allocations pendant l'exploration)
+	items := make([]Item, numNodes)
+	for i := range items {
+		items[i].NodeID = int32(i)
+		items[i].Priority = math.MaxFloat64
+		items[i].Index = -1
+	}
+
+	pq := make(PriorityQueue, 0, 1024)
+	heap.Init(&pq)
+
+	items[startID].Priority = 0
+	heap.Push(&pq, &items[startID])
+
 	found := false
 
+	steps := 0
 	for pq.Len() > 0 {
-		current := heap.Pop(&pq).(*Item).NodeID
+		steps++
+		item := heap.Pop(&pq).(*Item)
+		current := item.NodeID
 
 		if current == endID {
 			found = true
@@ -215,15 +236,14 @@ func (g *Graph) FindRoute(startLat, startLng, endLat, endLng float64, params Rou
 			cost := g.getEdgeCost(edge, params)
 			tentativeGScore := gScore[current] + cost
 
-			prevGScore, exists := gScore[edge.To]
-			if !exists || tentativeGScore < prevGScore {
+			if tentativeGScore < gScore[edge.To] {
 				cameFrom[edge.To] = current
 				edgeUsed[edge.To] = edge
 				gScore[edge.To] = tentativeGScore
 
-				// Heuristique : distance à vol d'oiseau (admissible pour distance/temps/carburant si normalisée)
-				hDist := Haversine(g.Nodes[edge.To].Lat, g.Nodes[edge.To].Lng, endNode.Lat, endNode.Lng)
-				
+				// 3. Heuristique Plane ultra-rapide (pas de cos/sin dans la boucle)
+				hDist := PlaneDistance(g.Nodes[edge.To].Lat, g.Nodes[edge.To].Lng, endNode.Lat, endNode.Lng, factorLng)
+
 				var h float64
 				switch params.Criterion {
 				case "distance":
@@ -233,7 +253,7 @@ func (g *Graph) FindRoute(startLat, startLng, endLat, endLng float64, params Rou
 				case "economy":
 					h = (hDist / 1000.0) * (params.Consumption / 100.0) * params.FuelPrice
 				case "toll":
-					h = 0 
+					h = 0
 				case "smart":
 					hTime := (hDist / 36.1) / 3600.0 * params.TimeValue
 					hFuel := (hDist / 1000.0) * (params.Consumption / 100.0) * params.FuelPrice
@@ -242,16 +262,22 @@ func (g *Graph) FindRoute(startLat, startLng, endLat, endLng float64, params Rou
 					h = hDist / 36.1
 				}
 
-				heap.Push(&pq, &Item{
-					NodeID:   edge.To,
-					Priority: tentativeGScore + h,
-				})
+				priority := tentativeGScore + h
+				neighborItem := &items[edge.To]
+
+				if neighborItem.Index == -1 {
+					neighborItem.Priority = priority
+					heap.Push(&pq, neighborItem)
+				} else if priority < neighborItem.Priority {
+					neighborItem.Priority = priority
+					heap.Fix(&pq, neighborItem.Index)
+				}
 			}
 		}
 	}
 
 	if !found {
-		return nil, errors.New("aucun itinéraire trouvé")
+		return nil, fmt.Errorf("aucun itinéraire trouvé (startID=%d, endID=%d, steps=%d, pqLen=%d, criterion=%s)", startID, endID, steps, pq.Len(), params.Criterion)
 	}
 
 	// Reconstruire le chemin et agréger les données
@@ -264,8 +290,8 @@ func (g *Graph) FindRoute(startLat, startLng, endLat, endLng float64, params Rou
 		node := g.Nodes[curr]
 		path = append([][2]float64{{node.Lng, node.Lat}}, path...)
 
-		parent, ok := cameFrom[curr]
-		if !ok {
+		parent := cameFrom[curr]
+		if parent == -1 {
 			break
 		}
 
@@ -274,10 +300,10 @@ func (g *Graph) FindRoute(startLat, startLng, endLat, endLng float64, params Rou
 
 		totalDist += edge.Distance
 		totalDuration += edge.Duration
-		
+
 		fuelLitres := (edge.Distance / 1000.0) * (params.Consumption / 100.0)
 		totalFuel += fuelLitres * params.FuelPrice
-		
+
 		toll := 0.0
 		if edge.IsToll {
 			toll = (edge.Distance / 1000.0) * params.TollPrice
